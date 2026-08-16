@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime/debug"
 	"strings"
 
 	"github.com/Beeeeen/krinos/internal/evidence"
@@ -20,8 +21,57 @@ import (
 	"github.com/Beeeeen/krinos/internal/triage"
 )
 
-// version is overwritten at release time with -ldflags "-X main.version=...".
-var version = "v0.1.0-dev"
+// version is stamped at release time with -ldflags "-X main.version=...".
+//
+// It starts empty on purpose. `go install module@version` does not apply our
+// ldflags, so a hard-coded default here would confidently report the wrong
+// version to every user who installed the documented way — and buildVersion
+// can recover the truth from what Go itself recorded.
+var version = ""
+
+// buildVersion reports the most accurate version available, in descending
+// order of authority: our release stamp, the module version Go records for
+// `go install module@version`, then the VCS revision it records for a build
+// from a checkout.
+//
+// This matters more here than in most tools. A user asking which Krinos they
+// are running is usually really asking how stale their bundled KEV snapshot
+// is, and answering that wrong is worse than not answering.
+func buildVersion() string {
+	if version != "" {
+		return version
+	}
+
+	info, ok := debug.ReadBuildInfo()
+	if !ok {
+		return "dev"
+	}
+	if v := info.Main.Version; v != "" && v != "(devel)" {
+		return v
+	}
+
+	var revision, modified string
+	for _, s := range info.Settings {
+		switch s.Key {
+		case "vcs.revision":
+			revision = s.Value
+		case "vcs.modified":
+			modified = s.Value
+		}
+	}
+	if revision == "" {
+		return "dev"
+	}
+	if len(revision) > 12 {
+		revision = revision[:12]
+	}
+	if modified == "true" {
+		// A binary built from a dirty tree must say so. Reproducing a report
+		// starts with knowing exactly what produced it.
+		return "dev+" + revision + ".dirty"
+	}
+	return "dev+" + revision
+}
 
 // Exit codes are part of the CLI contract. CI configurations depend on them,
 // so they are documented here and must not be reassigned casually.
@@ -31,7 +81,10 @@ const (
 	exitInvalid = 2 // usage or I/O error; the scan did not run
 )
 
-func main() { os.Exit(run(os.Args[1:])) }
+func main() {
+	version = buildVersion()
+	os.Exit(run(os.Args[1:]))
+}
 
 func run(args []string) int {
 	if len(args) == 0 {

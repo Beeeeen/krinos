@@ -142,7 +142,7 @@ your workflow can branch on — no `jq`, no glue.
 
 ```yaml
 - name: Triage security findings
-  uses: Beeeeen/krinos@v0.2.1
+  uses: Beeeeen/krinos@v0.2.2
   with:
     reports: ./security-reports
     fail-on: act
@@ -169,7 +169,7 @@ jobs:
 
       - name: Decide what actually matters
         id: krinos
-        uses: Beeeeen/krinos@v0.2.1
+        uses: Beeeeen/krinos@v0.2.2
         with:
           reports: reports/
           fail-on: act
@@ -187,7 +187,7 @@ jobs:
 Turn the gate off first. Watch the numbers for a week. Then turn it on.
 
 ```yaml
-- uses: Beeeeen/krinos@v0.2.1
+- uses: Beeeeen/krinos@v0.2.2
   with:
     reports: reports/
     soft-fail: true        # never fails the step
