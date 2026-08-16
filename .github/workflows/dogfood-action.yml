@@ -107,7 +107,7 @@ jobs:
 
       - name: Use Krinos the way a stranger would
         id: krinos
-        uses: Beeeeen/krinos@v0.2.1
+        uses: Beeeeen/krinos@v0.2.2
         with:
           reports: testdata/demo
           soft-fail: true
