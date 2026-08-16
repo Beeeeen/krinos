@@ -200,6 +200,11 @@ runs:
         IN_JSON_OUT: ${{ inputs.json-out }}
         IN_SOFT_FAIL: ${{ inputs.soft-fail }}
       run: |
+        # GitHub invokes composite bash steps as `bash -e`, so a non-zero exit
+        # from krinos would kill this script before the next line runs. We
+        # handle the gate's exit code deliberately — that is the whole point
+        # of soft-fail — so errexit has to come back off here.
+        set +e
         set -uo pipefail
 
         args=(scan --fail-on "${IN_FAIL_ON}" --show "${IN_SHOW}" --limit "${IN_LIMIT}")
@@ -227,6 +232,12 @@ runs:
         # shellcheck disable=SC2086
         krinos "${args[@]}" ${IN_REPORTS}
         code=$?
+        echo "krinos exited ${code}"
+
+        if [ "$code" -eq 2 ]; then
+          echo "::error title=Krinos::the scan did not run — check the reports path and the scanner output"
+          exit 2
+        fi
 
         # Krinos writes its step outputs before it exits, so they are already
         # in $GITHUB_OUTPUT whatever the gate decided.
