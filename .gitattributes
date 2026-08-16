@@ -1,0 +1,24 @@
+# Normalize everything to LF in the repository.
+#
+# This is not style policing. `action.yml` and the release workflow embed bash
+# that runs on Linux runners, and a script checked in with CRLF fails there
+# with an unreadable "\r: command not found". Krinos is developed on Windows,
+# so without this file that failure is one contributor away at all times.
+* text=auto eol=lf
+
+# Belt and braces for the files where line endings are load-bearing.
+*.go        text eol=lf
+*.yml       text eol=lf
+*.yaml      text eol=lf
+*.sh        text eol=lf
+Makefile    text eol=lf
+Dockerfile  text eol=lf
+
+# Test fixtures are compared byte-for-byte by the adapters; they must not be
+# rewritten by anyone's checkout.
+testdata/** text eol=lf
+
+*.png binary
+*.jpg binary
+*.gz  binary
+*.exe binary
