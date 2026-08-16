@@ -94,3 +94,29 @@ jobs:
           fi
           jq -e '.funnel.act >= 1 and .gate.pass == false' krinos-report.json > /dev/null
           echo "report schema verified"
+
+  published:
+    name: published tag
+    runs-on: ubuntu-latest
+    # The job above tests the working tree. This one tests what an outside
+    # user actually types, which exercises two things `./` cannot: resolving
+    # the action from a tag, and the version defaulting to github.action_ref
+    # so that pinning the action pins the binary.
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Use Krinos the way a stranger would
+        id: krinos
+        uses: Beeeeen/krinos@v0.2.1
+        with:
+          reports: testdata/demo
+          soft-fail: true
+
+      - name: Assert it installed the pinned version and reported outputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${{ steps.krinos.outputs.act }}" ]; then
+            echo "::error::the published action produced no outputs"; exit 1
+          fi
+          echo "published action verified: act=${{ steps.krinos.outputs.act }}"
