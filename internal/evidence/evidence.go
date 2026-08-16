@@ -6,7 +6,7 @@
 package evidence
 
 import (
-	"github.com/krinos-dev/krinos/internal/model"
+	"github.com/Beeeeen/krinos/internal/model"
 )
 
 // Kind names an evidence layer.

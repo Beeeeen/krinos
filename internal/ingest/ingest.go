@@ -13,7 +13,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/krinos-dev/krinos/internal/model"
+	"github.com/Beeeeen/krinos/internal/model"
 )
 
 // Adapter reads one scanner's output format.

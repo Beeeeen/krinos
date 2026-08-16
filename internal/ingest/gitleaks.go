@@ -3,7 +3,7 @@ package ingest
 import (
 	"encoding/json"
 
-	"github.com/krinos-dev/krinos/internal/model"
+	"github.com/Beeeeen/krinos/internal/model"
 )
 
 // Gitleaks reads the Gitleaks JSON report.

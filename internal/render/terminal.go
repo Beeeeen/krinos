@@ -6,9 +6,9 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/krinos-dev/krinos/internal/model"
-	"github.com/krinos-dev/krinos/internal/policy"
-	"github.com/krinos-dev/krinos/internal/triage"
+	"github.com/Beeeeen/krinos/internal/model"
+	"github.com/Beeeeen/krinos/internal/policy"
+	"github.com/Beeeeen/krinos/internal/triage"
 )
 
 const width = 74

@@ -5,7 +5,7 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/krinos-dev/krinos/internal/model"
+	"github.com/Beeeeen/krinos/internal/model"
 )
 
 // PathRule raises or lowers a finding's weight based on where it sits.

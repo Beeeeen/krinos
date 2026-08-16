@@ -3,7 +3,7 @@ package evidence
 import (
 	"fmt"
 
-	"github.com/krinos-dev/krinos/internal/model"
+	"github.com/Beeeeen/krinos/internal/model"
 )
 
 // Reachability asks whether the vulnerable code can be executed at all.

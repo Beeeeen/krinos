@@ -3,8 +3,8 @@ package policy
 import (
 	"testing"
 
-	"github.com/krinos-dev/krinos/internal/model"
-	"github.com/krinos-dev/krinos/internal/triage"
+	"github.com/Beeeeen/krinos/internal/model"
+	"github.com/Beeeeen/krinos/internal/triage"
 )
 
 func report(verdicts ...triage.Verdict) triage.Report {

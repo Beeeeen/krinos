@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/krinos-dev/krinos/internal/model"
+	"github.com/Beeeeen/krinos/internal/model"
 )
 
 func dep(depth int, devOnly bool) model.Finding {

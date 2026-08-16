@@ -1,0 +1,205 @@
+name: Krinos
+description: Prove which security findings actually matter — triage your scanners' output and gate the build on what can really hurt you.
+author: Krinos
+
+branding:
+  icon: filter
+  color: orange
+
+inputs:
+  reports:
+    description: |
+      Files or directories holding scanner reports. Space-separated.
+      Directories are read one level deep for *.json and *.sarif.
+    required: false
+    default: ./security-reports
+
+  fail-on:
+    description: 'Gate threshold: act, watch or never.'
+    required: false
+    default: act
+
+  soft-fail:
+    description: |
+      Never fail the step, even when the gate fails. Use this while adopting
+      Krinos, then branch on the `act` output yourself.
+    required: false
+    default: 'false'
+
+  show:
+    description: 'Which verdicts to include: act, watch, suppressed or all.'
+    required: false
+    default: act
+
+  limit:
+    description: 'Maximum findings shown per section. 0 for no limit.'
+    required: false
+    default: '20'
+
+  annotate:
+    description: 'Emit inline annotations on the changed lines.'
+    required: false
+    default: 'true'
+
+  annotate-watch:
+    description: 'Also annotate watch-level findings, as warnings.'
+    required: false
+    default: 'false'
+
+  ignore:
+    description: 'Fingerprints, CVE IDs or rule IDs to drop before triage. One per line.'
+    required: false
+    default: ''
+
+  epss:
+    description: 'Path to an EPSS dataset (JSON object mapping CVE ID to probability).'
+    required: false
+    default: ''
+
+  json-out:
+    description: 'Where to write the machine-readable report. Empty to skip.'
+    required: false
+    default: krinos-report.json
+
+  version:
+    description: |
+      Krinos release to install, e.g. v0.2.0, or "latest".
+      Defaults to the ref this action was called with, so pinning the action
+      pins the binary.
+    required: false
+    default: ''
+
+outputs:
+  ingested:
+    description: Findings reported by all scanners, before any triage.
+    value: ${{ steps.scan.outputs.ingested }}
+  unique:
+    description: Distinct real-world problems after cross-scanner dedup.
+    value: ${{ steps.scan.outputs.unique }}
+  duplicates:
+    description: Reports folded away as duplicates.
+    value: ${{ steps.scan.outputs.duplicates }}
+  act:
+    description: Findings that need action.
+    value: ${{ steps.scan.outputs.act }}
+  watch:
+    description: Findings worth tracking but not gating on.
+    value: ${{ steps.scan.outputs.watch }}
+  suppressed:
+    description: Findings suppressed, each with a recorded reason.
+    value: ${{ steps.scan.outputs.suppressed }}
+  reduction:
+    description: Percentage of reported findings that need no action today.
+    value: ${{ steps.scan.outputs.reduction }}
+  passed:
+    description: Whether the gate passed.
+    value: ${{ steps.scan.outputs.passed }}
+  report:
+    description: Path to the JSON report, if one was written.
+    value: ${{ inputs.json-out }}
+
+runs:
+  using: composite
+  steps:
+    - name: Install Krinos
+      shell: bash
+      env:
+        KRINOS_VERSION: ${{ inputs.version != '' && inputs.version || github.action_ref }}
+        GH_REPO: Beeeeen/krinos
+      run: |
+        set -euo pipefail
+
+        version="${KRINOS_VERSION:-latest}"
+        if [ "$version" = "latest" ] || [ -z "$version" ]; then
+          # Follow the /releases/latest redirect rather than parsing the API,
+          # so this works without a token and without jq.
+          version="$(curl -fsSLI -o /dev/null -w '%{url_effective}' \
+            "https://github.com/${GH_REPO}/releases/latest" | sed 's#.*/tag/##')"
+        fi
+        echo "installing krinos ${version}"
+
+        case "$(uname -s)" in
+          Linux)   os=linux   ;;
+          Darwin)  os=darwin  ;;
+          MINGW*|MSYS*|CYGWIN*) os=windows ;;
+          *) echo "::error::unsupported runner OS: $(uname -s)"; exit 1 ;;
+        esac
+        case "$(uname -m)" in
+          x86_64|amd64) arch=amd64 ;;
+          arm64|aarch64) arch=arm64 ;;
+          *) echo "::error::unsupported runner architecture: $(uname -m)"; exit 1 ;;
+        esac
+
+        binary=krinos
+        if [ "$os" = "windows" ]; then binary=krinos.exe; fi
+
+        base="https://github.com/${GH_REPO}/releases/download/${version}"
+        archive="krinos_${version}_${os}_${arch}.tar.gz"
+        tmp="$(mktemp -d)"
+
+        curl -fsSL -o "${tmp}/${archive}" "${base}/${archive}"
+        curl -fsSL -o "${tmp}/checksums.txt" "${base}/checksums.txt"
+
+        # A security tool that installs itself over an unverified download has
+        # no business gating anyone's build.
+        ( cd "${tmp}" && grep " ${archive}\$" checksums.txt | sha256sum -c - )
+
+        mkdir -p "${HOME}/.krinos/bin"
+        tar -xzf "${tmp}/${archive}" -C "${HOME}/.krinos/bin" "${binary}"
+        chmod +x "${HOME}/.krinos/bin/${binary}"
+        echo "${HOME}/.krinos/bin" >> "$GITHUB_PATH"
+
+        rm -rf "${tmp}"
+
+    - name: Triage
+      id: scan
+      shell: bash
+      env:
+        IN_REPORTS: ${{ inputs.reports }}
+        IN_FAIL_ON: ${{ inputs.fail-on }}
+        IN_SHOW: ${{ inputs.show }}
+        IN_LIMIT: ${{ inputs.limit }}
+        IN_ANNOTATE: ${{ inputs.annotate }}
+        IN_ANNOTATE_WATCH: ${{ inputs.annotate-watch }}
+        IN_IGNORE: ${{ inputs.ignore }}
+        IN_EPSS: ${{ inputs.epss }}
+        IN_JSON_OUT: ${{ inputs.json-out }}
+        IN_SOFT_FAIL: ${{ inputs.soft-fail }}
+      run: |
+        set -uo pipefail
+
+        args=(scan --fail-on "${IN_FAIL_ON}" --show "${IN_SHOW}" --limit "${IN_LIMIT}")
+
+        if [ "${IN_ANNOTATE}" = "true" ]; then
+          args+=(--format github)
+        else
+          args+=(--format text --color)
+        fi
+        if [ "${IN_ANNOTATE_WATCH}" = "true" ]; then
+          args+=(--annotate-watch)
+        fi
+        if [ -n "${IN_JSON_OUT}" ]; then
+          args+=(--json-out "${IN_JSON_OUT}")
+        fi
+        if [ -n "${IN_EPSS}" ]; then
+          args+=(--epss "${IN_EPSS}")
+        fi
+        while IFS= read -r line; do
+          [ -n "$line" ] && args+=(--ignore "$line")
+        done <<< "${IN_IGNORE}"
+
+        # Word splitting on IN_REPORTS is intended: it is a space-separated
+        # list of paths.
+        # shellcheck disable=SC2086
+        krinos "${args[@]}" ${IN_REPORTS}
+        code=$?
+
+        # Krinos writes its step outputs before it exits, so they are already
+        # in $GITHUB_OUTPUT whatever the gate decided.
+        if [ "${IN_SOFT_FAIL}" = "true" ]; then
+          if [ "$code" -eq 1 ]; then
+            echo "::notice title=Krinos::gate failed but soft-fail is on; check the 'act' output"
+          fi
+          exit 0
+        fi
+        exit $code

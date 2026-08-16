@@ -13,11 +13,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/krinos-dev/krinos/internal/evidence"
-	"github.com/krinos-dev/krinos/internal/ingest"
-	"github.com/krinos-dev/krinos/internal/policy"
-	"github.com/krinos-dev/krinos/internal/render"
-	"github.com/krinos-dev/krinos/internal/triage"
+	"github.com/Beeeeen/krinos/internal/evidence"
+	"github.com/Beeeeen/krinos/internal/ingest"
+	"github.com/Beeeeen/krinos/internal/policy"
+	"github.com/Beeeeen/krinos/internal/render"
+	"github.com/Beeeeen/krinos/internal/triage"
 )
 
 // version is overwritten at release time with -ldflags "-X main.version=...".
@@ -62,14 +62,16 @@ func cmdScan(args []string) int {
 	fs.SetOutput(os.Stderr)
 
 	var (
-		format   = fs.String("format", "text", "output format: text or json")
+		format   = fs.String("format", "text", "output format: text, json, markdown or github")
 		failOn   = fs.String("fail-on", "act", "gate threshold: act, watch or never")
 		show     = fs.String("show", "act", "which verdicts to print: act, watch, suppressed or all")
 		epssPath = fs.String("epss", "", "path to an EPSS dataset (JSON object of CVE to probability)")
+		jsonOut  = fs.String("json-out", "", "also write the JSON report to this file, whatever --format is")
 		limit    = fs.Int("limit", 20, "maximum findings printed per section; 0 for no limit")
 		noColor  = fs.Bool("no-color", false, "disable ANSI colour")
 		color    = fs.Bool("color", false, "force ANSI colour even when redirected")
 		ascii    = fs.Bool("ascii", false, "use ASCII glyphs instead of Unicode")
+		annWatch = fs.Bool("annotate-watch", false, "with --format github, also annotate watch findings as warnings")
 		ignore   stringList
 	)
 	fs.Var(&ignore, "ignore", "fingerprint, CVE or rule ID to drop before triage (repeatable)")
@@ -133,26 +135,82 @@ func cmdScan(args []string) int {
 	report := triage.NewEngine().Run(findings, ctx)
 	decision := pol.Gate(report)
 
+	// The JSON report is written before rendering so that a downstream job
+	// still gets the machine-readable artifact even if the human-facing
+	// renderer fails.
+	if *jsonOut != "" {
+		if err := writeJSONReport(*jsonOut, report, intake, decision); err != nil {
+			fmt.Fprintf(os.Stderr, "krinos: %v\n", err)
+			return exitInvalid
+		}
+	}
+
+	wantWatch := *show == "watch" || *show == "all"
+
 	switch strings.ToLower(*format) {
 	case "json":
 		if err := render.JSON(os.Stdout, report, intake, decision, version); err != nil {
 			fmt.Fprintf(os.Stderr, "krinos: writing report: %v\n", err)
 			return exitInvalid
 		}
+	case "markdown", "md":
+		md := render.Markdown{Limit: *limit, ShowWatch: wantWatch}
+		if err := md.Render(os.Stdout, report, intake, decision, version); err != nil {
+			fmt.Fprintf(os.Stderr, "krinos: writing report: %v\n", err)
+			return exitInvalid
+		}
+	case "github":
+		gh := render.GitHub{
+			SummaryPath:   os.Getenv("GITHUB_STEP_SUMMARY"),
+			OutputPath:    os.Getenv("GITHUB_OUTPUT"),
+			Annotate:      true,
+			AnnotateWatch: *annWatch,
+			Limit:         *limit,
+		}
+		// A summary or an output file we could not write is worth a warning,
+		// never a failed build. The gate's verdict is the only thing allowed
+		// to decide the exit code.
+		if err := gh.Render(os.Stdout, report, intake, decision, version); err != nil {
+			fmt.Fprintf(os.Stderr, "krinos: warning: %v\n", err)
+		}
 	case "text":
 		term := render.Terminal{
 			Style:          render.DetectStyle(os.Stdout, *color, *noColor, *ascii),
-			ShowWatch:      *show == "watch" || *show == "all",
+			ShowWatch:      wantWatch,
 			ShowSuppressed: *show == "suppressed" || *show == "all",
 			Limit:          *limit,
 		}
 		term.Render(os.Stdout, report, intake, decision, version)
 	default:
-		fmt.Fprintf(os.Stderr, "krinos: invalid --format %q: expected text or json\n", *format)
+		fmt.Fprintf(os.Stderr, "krinos: invalid --format %q: expected text, json, markdown or github\n", *format)
 		return exitInvalid
 	}
 
 	return decision.ExitCode
+}
+
+// writeJSONReport writes the machine-readable report to path, creating any
+// missing parent directories.
+//
+// CI configurations habitually name an output under a directory that does not
+// exist yet, and failing on that is a support ticket we can simply not have.
+func writeJSONReport(path string, report triage.Report, intake map[string]int, decision policy.Decision) error {
+	if dir := filepath.Dir(path); dir != "" && dir != "." {
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			return fmt.Errorf("creating %s: %w", dir, err)
+		}
+	}
+
+	f, err := os.Create(path)
+	if err != nil {
+		return fmt.Errorf("writing %s: %w", path, err)
+	}
+	defer f.Close()
+
+	if err := render.JSON(f, report, intake, decision, version); err != nil {
+		return fmt.Errorf("writing %s: %w", path, err)
+	}
+	return f.Close()
 }
 
 // expandInputs resolves each argument to concrete report files, walking one
@@ -240,6 +298,13 @@ EXAMPLES
   krinos scan ./security-reports/
   krinos scan --fail-on watch --show all reports/
   krinos scan --format json reports/ > krinos.json
+
+OUTPUT FORMATS
+  text       ranked findings for a human reading a build log (default)
+  json       machine-readable, with a versioned schema
+  markdown   for a pull request comment or a chat message
+  github     GitHub Actions: inline annotations, job summary and step
+             outputs, all written in one pass
 
 SUPPORTED INPUT
   trivy      Trivy JSON (vulnerabilities, secrets, misconfigurations)

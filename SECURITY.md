@@ -3,7 +3,7 @@
 ## Reporting a vulnerability
 
 Please report security issues privately through
-[GitHub Security Advisories](https://github.com/krinos-dev/krinos/security/advisories/new).
+[GitHub Security Advisories](https://github.com/Beeeeen/krinos/security/advisories/new).
 
 Do not open a public issue for a vulnerability.
 

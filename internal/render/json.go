@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"io"
 
-	"github.com/krinos-dev/krinos/internal/policy"
-	"github.com/krinos-dev/krinos/internal/triage"
+	"github.com/Beeeeen/krinos/internal/policy"
+	"github.com/Beeeeen/krinos/internal/triage"
 )
 
 // Document is the machine-readable shape of a run.

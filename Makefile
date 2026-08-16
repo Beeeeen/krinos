@@ -34,7 +34,7 @@ lint: ## Verify formatting and run vet
 
 .PHONY: deps
 deps: ## Assert the zero-dependency invariant
-	@deps="$$(go list -deps -f '{{if not .Standard}}{{.ImportPath}}{{end}}' ./... | grep -v '^github.com/krinos-dev/krinos' || true)"; \
+	@deps="$$(go list -deps -f '{{if not .Standard}}{{.ImportPath}}{{end}}' ./... | grep -v '^github.com/Beeeeen/krinos' || true)"; \
 	if [ -n "$$deps" ]; then \
 		echo "Krinos must have zero third-party dependencies. Found:"; echo "$$deps"; exit 1; \
 	fi; \

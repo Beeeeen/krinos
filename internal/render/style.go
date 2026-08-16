@@ -4,8 +4,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/krinos-dev/krinos/internal/model"
-	"github.com/krinos-dev/krinos/internal/triage"
+	"github.com/Beeeeen/krinos/internal/model"
+	"github.com/Beeeeen/krinos/internal/triage"
 )
 
 // Palette holds the 256-colour codes the renderer uses.

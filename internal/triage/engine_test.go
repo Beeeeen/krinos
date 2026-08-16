@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/krinos-dev/krinos/internal/evidence"
-	"github.com/krinos-dev/krinos/internal/model"
+	"github.com/Beeeeen/krinos/internal/evidence"
+	"github.com/Beeeeen/krinos/internal/model"
 )
 
 func finding(mutate func(*model.Finding)) model.Finding {

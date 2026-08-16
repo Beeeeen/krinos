@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/krinos-dev/krinos/internal/model"
+	"github.com/Beeeeen/krinos/internal/model"
 )
 
 func log4shell(scanner, reportedPath string) model.Finding {

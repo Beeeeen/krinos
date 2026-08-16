@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/krinos-dev/krinos/internal/model"
+	"github.com/Beeeeen/krinos/internal/model"
 )
 
 // SARIF reads the OASIS Static Analysis Results Interchange Format 2.1.0.

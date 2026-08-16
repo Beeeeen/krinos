@@ -2,9 +2,9 @@
 
 **Your scanners find everything. Krinos tells you what to fix.**
 
-[![CI](https://github.com/krinos-dev/krinos/actions/workflows/ci.yml/badge.svg)](https://github.com/krinos-dev/krinos/actions/workflows/ci.yml)
+[![CI](https://github.com/Beeeeen/krinos/actions/workflows/ci.yml/badge.svg)](https://github.com/Beeeeen/krinos/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
-[![Go Report Card](https://goreportcard.com/badge/github.com/krinos-dev/krinos)](https://goreportcard.com/report/github.com/krinos-dev/krinos)
+[![Go Report Card](https://goreportcard.com/badge/github.com/Beeeeen/krinos)](https://goreportcard.com/report/github.com/Beeeeen/krinos)
 [![Dependencies](https://img.shields.io/badge/dependencies-0-brightgreen.svg)](go.mod)
 
 You don't have a vulnerability problem. You have a
@@ -85,10 +85,10 @@ come back.
 ## Install
 
 ```bash
-go install github.com/krinos-dev/krinos/cmd/krinos@latest
+go install github.com/Beeeeen/krinos/cmd/krinos@latest
 ```
 
-Or grab a binary from [Releases](https://github.com/krinos-dev/krinos/releases).
+Or grab a binary from [Releases](https://github.com/Beeeeen/krinos/releases).
 Krinos is a single static binary with **zero third-party dependencies** — we
 are a supply-chain security tool, so our own supply chain is the argument.
 
@@ -134,20 +134,101 @@ we never write an adapter for.
 | `1` | Gate failed — findings at or above the threshold |
 | `2` | Usage or I/O error; the scan did not run |
 
-## In CI
+## GitHub Action
+
+Krinos speaks GitHub natively. One step gives you **inline annotations on the
+diff**, a **job summary** on the run page, and **step outputs** the rest of
+your workflow can branch on — no `jq`, no glue.
 
 ```yaml
 - name: Triage security findings
-  run: |
-    trivy fs --format json --output reports/trivy.json .
-    semgrep --sarif --output reports/semgrep.sarif .
-    gitleaks detect --report-format json --report-path reports/gitleaks.json
+  uses: Beeeeen/krinos@v0.2.0
+  with:
+    reports: ./security-reports
+    fail-on: act
+```
 
-    krinos scan --fail-on act reports/
+A complete pipeline:
+
+```yaml
+name: Security
+on: [pull_request]
+
+jobs:
+  triage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run the scanners you already trust
+        run: |
+          mkdir -p reports
+          trivy fs --format json --output reports/trivy.json .
+          semgrep --sarif --output reports/semgrep.sarif .
+          gitleaks detect --report-format json --report-path reports/gitleaks.json
+
+      - name: Decide what actually matters
+        id: krinos
+        uses: Beeeeen/krinos@v0.2.0
+        with:
+          reports: reports/
+          fail-on: act
+
+      - name: Tell the team
+        if: always()
+        run: |
+          echo "${{ steps.krinos.outputs.act }} to fix, \
+                ${{ steps.krinos.outputs.suppressed }} suppressed, \
+                ${{ steps.krinos.outputs.reduction }}% needed no action"
+```
+
+### Adopting it without breaking anyone's Friday
+
+Turn the gate off first. Watch the numbers for a week. Then turn it on.
+
+```yaml
+- uses: Beeeeen/krinos@v0.2.0
+  with:
+    reports: reports/
+    soft-fail: true        # never fails the step
+    show: all              # print watch and suppressed too
+```
+
+### Inputs
+
+| Input | Default | What it does |
+| --- | --- | --- |
+| `reports` | `./security-reports` | Files or directories holding scanner output |
+| `fail-on` | `act` | Gate threshold: `act`, `watch` or `never` |
+| `soft-fail` | `false` | Never fail the step; branch on the outputs instead |
+| `show` | `act` | `act`, `watch`, `suppressed` or `all` |
+| `annotate` | `true` | Inline annotations on the changed lines |
+| `annotate-watch` | `false` | Also annotate watch findings, as warnings |
+| `ignore` | — | Fingerprints, CVEs or rule IDs to drop, one per line |
+| `epss` | — | Path to an EPSS dataset |
+| `json-out` | `krinos-report.json` | Where to write the machine-readable report |
+| `version` | the action's ref | Pin the binary; pinning the action pins it for you |
+
+### Outputs
+
+`ingested` · `unique` · `duplicates` · `act` · `watch` · `suppressed` ·
+`reduction` · `passed` · `report`
+
+### Other CI
+
+Krinos is a single binary and works anywhere:
+
+```bash
+krinos scan --format markdown reports/ > comment.md   # PR comments, chat
+krinos scan --format json     reports/ > krinos.json  # dashboards
+krinos scan --fail-on act     reports/                # any gate, any CI
 ```
 
 Krinos runs offline. The KEV catalogue is bundled, so a scan in an air-gapped
-runner behaves exactly like a scan on a laptop.
+runner behaves exactly like a scan on a laptop. The action verifies the
+binary's SHA-256 against the published checksums before running it — a
+security tool that installs itself over an unverified download has no business
+gating anyone's build.
 
 ## Design commitments
 

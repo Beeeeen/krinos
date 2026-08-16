@@ -11,7 +11,7 @@ package dedupe
 import (
 	"sort"
 
-	"github.com/krinos-dev/krinos/internal/model"
+	"github.com/Beeeeen/krinos/internal/model"
 )
 
 // Collapse merges findings that share a fingerprint.

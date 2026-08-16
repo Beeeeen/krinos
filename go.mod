@@ -1,4 +1,4 @@
-module github.com/krinos-dev/krinos
+module github.com/Beeeeen/krinos
 
 go 1.26
 

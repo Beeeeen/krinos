@@ -1,0 +1,120 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Tag to build (must already exist)
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: build ${{ matrix.os }}/${{ matrix.arch }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - { os: linux, arch: amd64 }
+          - { os: linux, arch: arm64 }
+          - { os: darwin, arch: amd64 }
+          - { os: darwin, arch: arm64 }
+          - { os: windows, arch: amd64 }
+          - { os: windows, arch: arm64 }
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.26"
+
+      - name: Build
+        env:
+          GOOS: ${{ matrix.os }}
+          GOARCH: ${{ matrix.arch }}
+          VERSION: ${{ inputs.tag || github.ref_name }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          binary=krinos
+          if [ "$GOOS" = "windows" ]; then binary=krinos.exe; fi
+
+          # CGO off and -trimpath give a fully static, reproducible binary:
+          # the same source and toolchain produce the same bytes, which is
+          # what makes the published checksums worth anything.
+          CGO_ENABLED=0 go build \
+            -trimpath \
+            -ldflags="-s -w -X main.version=${VERSION}" \
+            -o "dist/${binary}" ./cmd/krinos
+
+          # LICENSE and README travel with every artifact: Apache 2.0 requires
+          # the licence to accompany the work, and an enterprise reviewing us
+          # will look for it.
+          cp LICENSE README.md dist/
+
+          archive="krinos_${VERSION}_${GOOS}_${GOARCH}.tar.gz"
+          tar -czf "dist/${archive}" -C dist "${binary}" LICENSE README.md
+          rm "dist/${binary}" dist/LICENSE dist/README.md
+          echo "built ${archive}"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: krinos-${{ matrix.os }}-${{ matrix.arch }}
+          path: dist/*.tar.gz
+          retention-days: 1
+
+  release:
+    name: publish
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: staging
+          merge-multiple: true
+
+      - name: Checksums
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd staging
+          # Sorted so the file is reproducible and diffable between releases.
+          sha256sum *.tar.gz | sort -k2 > checksums.txt
+          cat checksums.txt
+
+      - name: Verify the artifacts actually run
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="${{ inputs.tag || github.ref_name }}"
+          tar -xzf "staging/krinos_${version}_linux_amd64.tar.gz" -C /tmp
+          chmod +x /tmp/krinos
+          /tmp/krinos version
+          # A release that cannot triage our own demo corpus does not ship.
+          /tmp/krinos scan --fail-on never testdata/demo/ > /dev/null
+          echo "artifact verified"
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="${{ inputs.tag || github.ref_name }}"
+          gh release create "$version" \
+            --repo "${{ github.repository }}" \
+            --title "Krinos $version" \
+            --generate-notes \
+            --verify-tag \
+            staging/*.tar.gz staging/checksums.txt

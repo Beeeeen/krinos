@@ -7,9 +7,9 @@ package triage
 import (
 	"sort"
 
-	"github.com/krinos-dev/krinos/internal/dedupe"
-	"github.com/krinos-dev/krinos/internal/evidence"
-	"github.com/krinos-dev/krinos/internal/model"
+	"github.com/Beeeeen/krinos/internal/dedupe"
+	"github.com/Beeeeen/krinos/internal/evidence"
+	"github.com/Beeeeen/krinos/internal/model"
 )
 
 // Verdict is the decision Krinos reaches about a single finding.

@@ -44,5 +44,5 @@ CMD ["scan", "."]
 
 LABEL org.opencontainers.image.title="krinos" \
       org.opencontainers.image.description="Prove which security findings actually matter" \
-      org.opencontainers.image.source="https://github.com/krinos-dev/krinos" \
+      org.opencontainers.image.source="https://github.com/Beeeeen/krinos" \
       org.opencontainers.image.licenses="Apache-2.0"

@@ -27,7 +27,7 @@ which unlocks our strongest reachability discount), **Grype native JSON**,
 ## Getting set up
 
 ```bash
-git clone https://github.com/krinos-dev/krinos
+git clone https://github.com/Beeeeen/krinos
 cd krinos
 make check    # lint + dependency assertion + tests
 make demo     # triage the bundled corpus

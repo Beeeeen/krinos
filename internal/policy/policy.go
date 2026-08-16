@@ -9,8 +9,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/krinos-dev/krinos/internal/model"
-	"github.com/krinos-dev/krinos/internal/triage"
+	"github.com/Beeeeen/krinos/internal/model"
+	"github.com/Beeeeen/krinos/internal/triage"
 )
 
 // Policy is the gate configuration for one run.
