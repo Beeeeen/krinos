@@ -1,0 +1,96 @@
+name: Dogfood the action
+
+# The CI workflow proves the binary works. This one proves the *action* works
+# — the install script, the checksum verification, the annotations, the job
+# summary and the step outputs — on every runner OS we claim to support.
+#
+# It uses `./` rather than a published tag on purpose: the point is to catch a
+# broken action before it is tagged, not after someone else has already
+# depended on it.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - action.yml
+      - .github/workflows/dogfood-action.yml
+      - cmd/**
+      - internal/render/**
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  action:
+    name: action on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Triage our own demo corpus
+        id: krinos
+        uses: ./
+        with:
+          reports: testdata/demo
+          fail-on: act
+          # The demo corpus is built to contain real findings, so the gate is
+          # supposed to fail. Soft-fail lets the assertions below run.
+          soft-fail: true
+          show: all
+          json-out: krinos-report.json
+
+      - name: Assert the action reported what it promises
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          act='${{ steps.krinos.outputs.act }}'
+          ingested='${{ steps.krinos.outputs.ingested }}'
+          reduction='${{ steps.krinos.outputs.reduction }}'
+          passed='${{ steps.krinos.outputs.passed }}'
+
+          echo "act=${act} ingested=${ingested} reduction=${reduction} passed=${passed}"
+
+          # Empty outputs are the failure mode that matters here: it means the
+          # action ran, exited zero, and told the caller nothing — which is
+          # worse than crashing, because a workflow branching on `act` would
+          # silently treat it as clean.
+          for name in act ingested reduction passed; do
+            value="$(eval echo \"\$$name\")"
+            if [ -z "$value" ]; then
+              echo "::error::output '${name}' was empty"; exit 1
+            fi
+          done
+
+          if [ "$act" -lt 1 ]; then
+            echo "::error::the demo corpus should produce findings to act on, got ${act}"; exit 1
+          fi
+          if [ "$ingested" -lt 20 ]; then
+            echo "::error::expected the full demo corpus, got ${ingested} findings"; exit 1
+          fi
+          if [ "$passed" != "false" ]; then
+            echo "::error::the gate should have failed on the demo corpus"; exit 1
+          fi
+
+          test -s krinos-report.json || { echo "::error::no JSON report written"; exit 1; }
+          echo "action verified on ${{ matrix.os }}"
+
+      - name: Assert the JSON report is well-formed
+        shell: bash
+        run: |
+          set -euo pipefail
+          schema="$(jq -r .schema krinos-report.json)"
+          if [ "$schema" != "krinos.report/v1" ]; then
+            echo "::error::unexpected report schema: ${schema}"; exit 1
+          fi
+          jq -e '.funnel.act >= 1 and .gate.pass == false' krinos-report.json > /dev/null
+          echo "report schema verified"
