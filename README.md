@@ -252,9 +252,10 @@ These are not aspirations. They are tested, and the tests are named after them.
 
 | Version | What lands |
 | --- | --- |
-| **v0.1** | Trivy / Gitleaks / SARIF ingest, dedup, three evidence layers, policy gate, JSON output |
-| v0.2 | `krinos update` for the live KEV feed, `.krinos.yml` config, exceptions with expiry dates |
-| v0.3 | More adapters: Grype native, OSV-Scanner native, npm audit (dev-dependency data), Checkov |
+| v0.1 | Trivy / Gitleaks / SARIF ingest, dedup, three evidence layers, policy gate, JSON output |
+| **v0.2** | **GitHub-native output — annotations, job summary, step outputs — plus the action and signed releases** |
+| v0.3 | `krinos update` for the live KEV feed, `.krinos.yml` config, exceptions with expiry dates |
+| v0.4 | More adapters: Grype native, OSV-Scanner native, npm audit (dev-dependency data), Checkov |
 | v1.0 | Call-graph reachability for Go and JavaScript — the first evidence we will report as `call-graph` |
 | v2.0 | Provenance: which lines were AI-generated, by what, and did a human review them |
 
