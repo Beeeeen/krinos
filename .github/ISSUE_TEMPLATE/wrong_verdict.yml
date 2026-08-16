@@ -1,0 +1,85 @@
+name: Krinos got a verdict wrong
+description: A finding was suppressed that mattered, or gated that didn't. These are the most useful reports we receive.
+title: "verdict: "
+labels: ["verdict", "needs-triage"]
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Thank you for filing this.** Deciding what matters is the entire
+        product, so a verdict you disagree with is not a nuisance report — it
+        is the only signal that tells us where the engine is wrong.
+
+        Two things before you start:
+
+        - **Never paste a real secret.** If the finding is a credential,
+          redact the value. Krinos deliberately never copies secret values
+          into its own output, and we would rather not receive them either.
+        - There is no need to argue your case. Tell us what you expected and
+          why; the evidence Krinos printed usually shows us the rest.
+
+  - type: dropdown
+    id: direction
+    attributes:
+      label: Which way was it wrong?
+      options:
+        - It suppressed something that actually mattered (false negative)
+        - It gated on something harmless (false positive)
+        - The ranking was wrong — right verdicts, wrong order
+    validations:
+      required: true
+
+  - type: textarea
+    id: evidence
+    attributes:
+      label: What Krinos printed
+      description: |
+        Paste the finding block, including the evidence lines. Run with
+        `--show all` if the finding was suppressed.
+      render: text
+      placeholder: |
+        1. CRITICAL 100  CVE-2023-4863
+           libwebp@1.3.1  Heap buffer overflow in WebP decoding
+           storefront/package-lock.json
+           · manifest   direct dependency — your code imports this package
+           ✔ dataset    CVE-2023-4863 is in the CISA KEV catalogue
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected, and why
+      description: |
+        The "why" matters more than the "what". If the reason is something
+        Krinos could not have known — an internal service is public, a test
+        directory is actually deployed — say so. That usually points at a
+        missing input rather than a scoring bug.
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Krinos version
+      description: Output of `krinos version`.
+      placeholder: krinos v0.2.2
+    validations:
+      required: true
+
+  - type: input
+    id: scanners
+    attributes:
+      label: Which scanners produced the report
+      placeholder: trivy 0.5x, semgrep 1.9x, gitleaks 8.x
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: confirm
+    attributes:
+      label: Before submitting
+      options:
+        - label: I have redacted any real credentials from the pasted output.
+          required: true

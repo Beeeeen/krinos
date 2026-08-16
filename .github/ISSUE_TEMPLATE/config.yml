@@ -1,0 +1,10 @@
+blank_issues_enabled: true
+
+contact_links:
+  - name: Report a security vulnerability in Krinos
+    url: https://github.com/Beeeeen/krinos/security/advisories/new
+    about: Please do not open a public issue. Private advisories go here.
+
+  - name: Ask a question or share how you are using it
+    url: https://github.com/Beeeeen/krinos/discussions
+    about: Discussions is the right place for questions, tuning advice and war stories.

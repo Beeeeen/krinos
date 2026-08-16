@@ -1,0 +1,55 @@
+name: Support another scanner
+description: Krinos cannot read output from a tool you use.
+title: "ingest: support "
+labels: ["adapter", "help wanted"]
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Adapters are the highest-leverage contribution to this project: each
+        one makes Krinos useful to a whole new audience without touching the
+        engine, and the interface is about forty lines.
+
+        **If you are willing to write it, say so** — we will review quickly
+        and help. See [CONTRIBUTING.md](https://github.com/Beeeeen/krinos/blob/main/CONTRIBUTING.md).
+
+        Before filing: many tools can emit **SARIF 2.1.0**, which Krinos
+        already reads. Checking for a `--sarif` flag is often faster than
+        waiting for us.
+
+  - type: input
+    id: tool
+    attributes:
+      label: Which scanner
+      placeholder: npm audit
+    validations:
+      required: true
+
+  - type: dropdown
+    id: sarif
+    attributes:
+      label: Can it emit SARIF?
+      options:
+        - "No"
+        - "Yes, but the SARIF loses information we need"
+        - "I do not know"
+    validations:
+      required: true
+
+  - type: textarea
+    id: sample
+    attributes:
+      label: A small sample of its output
+      description: A handful of findings is plenty. Redact anything sensitive.
+      render: json
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: willing
+    attributes:
+      label: Would you like to write it?
+      options:
+        - label: I am willing to open a pull request for this adapter.
+          required: false

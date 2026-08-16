@@ -1,0 +1,64 @@
+name: Bug report
+description: Krinos crashed, produced malformed output, or failed to read a report it should understand.
+title: "bug: "
+labels: ["bug", "needs-triage"]
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        For a verdict you disagree with, use **"Krinos got a verdict wrong"**
+        instead — that is a tuning question, and it has its own form.
+
+        **Please redact any real credentials** from anything you paste.
+
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: Include the exact command you ran and its output.
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected instead
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: A report that reproduces it
+      description: |
+        A trimmed scanner report is worth more than a paragraph of
+        description. Cut it down to the few findings that trigger the
+        problem — and redact anything sensitive first.
+      render: json
+    validations:
+      required: false
+
+  - type: input
+    id: version
+    attributes:
+      label: Krinos version
+      placeholder: krinos v0.2.2
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Where it ran
+      multiple: true
+      options:
+        - Linux
+        - macOS
+        - Windows
+        - GitHub Actions
+        - Other CI
+        - Docker
+    validations:
+      required: true
