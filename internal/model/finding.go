@@ -9,7 +9,6 @@ package model
 import (
 	"crypto/sha256"
 	"encoding/hex"
-	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -186,8 +185,18 @@ func (f *Finding) PrimaryCVE() string {
 
 // NormalizePath makes paths comparable across scanners running on different
 // platforms and with different working directories.
+//
+// It deliberately does NOT use filepath.ToSlash. That function is a no-op on
+// Unix, and these paths arrive inside scanner reports — they are data, not
+// paths on the machine running Krinos. A Trivy report generated on a Windows
+// developer's laptop and triaged on a Linux runner must normalize to the same
+// string, or two things break silently: fingerprints diverge so cross-scanner
+// dedup stops folding anything, and every path rule stops matching because
+// the blast-radius layer splits on "/".
+//
+// Cross-platform CI caught this. It passed on Windows.
 func NormalizePath(p string) string {
-	p = filepath.ToSlash(strings.TrimSpace(p))
+	p = strings.ReplaceAll(strings.TrimSpace(p), `\`, "/")
 	p = strings.TrimPrefix(p, "./")
 	p = strings.TrimPrefix(p, "/")
 	return p

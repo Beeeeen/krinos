@@ -166,14 +166,42 @@ func TestUnknownSeverityOutranksLow(t *testing.T) {
 
 func TestNormalizePath(t *testing.T) {
 	cases := map[string]string{
-		`./src/main.go`:      "src/main.go",
-		`/src/main.go`:       "src/main.go",
-		`src\windows\a.go`:   "src/windows/a.go",
-		`  spaced/path.go  `: "spaced/path.go",
+		`./src/main.go`:            "src/main.go",
+		`/src/main.go`:             "src/main.go",
+		`src\windows\a.go`:         "src/windows/a.go",
+		`.\src\windows\a.go`:       "src/windows/a.go",
+		`  spaced/path.go  `:       "spaced/path.go",
+		`internal\auth\testdata\x`: "internal/auth/testdata/x",
 	}
 	for in, want := range cases {
 		if got := NormalizePath(in); got != want {
 			t.Errorf("NormalizePath(%q) = %q, want %q", in, got, want)
 		}
+	}
+}
+
+// Regression, found by cross-platform CI: NormalizePath used filepath.ToSlash,
+// which is a no-op on Unix. A report produced on Windows and triaged on a
+// Linux runner therefore kept its backslashes, and the consequences were both
+// silent — dedup stopped folding, and every path rule stopped matching
+// because the blast-radius layer splits on "/".
+//
+// These paths are data from a scanner report, not paths on the host, so the
+// separator conversion can never be platform-conditional.
+func TestNormalizePath_IsPlatformIndependent(t *testing.T) {
+	windowsReport := Finding{
+		Class:    ClassCode,
+		RuleID:   "sqli",
+		Location: Location{Path: `backend\internal\payments\ledger.go`, StartLine: 214},
+	}
+	unixReport := Finding{
+		Class:    ClassCode,
+		RuleID:   "sqli",
+		Location: Location{Path: "backend/internal/payments/ledger.go", StartLine: 214},
+	}
+
+	if windowsReport.ComputeFingerprint() != unixReport.ComputeFingerprint() {
+		t.Fatalf("the same finding reported from Windows and Unix must fingerprint identically\n windows=%s\n unix   =%s",
+			windowsReport.ComputeFingerprint(), unixReport.ComputeFingerprint())
 	}
 }

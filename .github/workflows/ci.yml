@@ -27,11 +27,12 @@ jobs:
         # handling in particular has to behave identically on all three.
         os: [ubuntu-latest, macos-latest, windows-latest]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         with:
           go-version: "1.26"
+          cache: false
           check-latest: true
 
       - name: Verify formatting
@@ -64,11 +65,12 @@ jobs:
     name: supply chain
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         with:
           go-version: "1.26"
+          cache: false
 
       # The zero-dependency claim in the README is load-bearing marketing and
       # a real security property. CI enforces it so it cannot rot.
@@ -95,11 +97,12 @@ jobs:
     runs-on: ubuntu-latest
     needs: test
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         with:
           go-version: "1.26"
+          cache: false
 
       - name: Build
         run: go build -o bin/krinos ./cmd/krinos
@@ -125,7 +128,7 @@ jobs:
           fi
           echo "confirmed: gate behaves as documented"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: krinos-report
           path: krinos-report.json

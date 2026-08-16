@@ -225,6 +225,32 @@ func TestBlastRadius_MatchesRealSensitiveSegments(t *testing.T) {
 	}
 }
 
+// The other half of the NormalizePath regression: path rules split on "/",
+// so a report carrying Windows separators would match nothing at all and the
+// whole blast-radius layer would go quietly dark.
+func TestBlastRadius_HandlesWindowsSeparators(t *testing.T) {
+	dampened := model.Finding{
+		Class:    model.ClassSecret,
+		Location: model.Location{Path: `internal\auth\testdata\fake_token.json`},
+	}
+	ev, ok := NewBlastRadius().Evaluate(dampened, &Context{})
+	if !ok {
+		t.Fatal("a Windows-separated fixture path must still match the dampener")
+	}
+	if ev.Multiplier > 0.5 {
+		t.Errorf("want the fixture dampener, got %v (%s)", ev.Multiplier, ev.Reason)
+	}
+
+	amplified := model.Finding{
+		Class:    model.ClassCode,
+		Location: model.Location{Path: `services\payments\charge.go`},
+	}
+	ev, ok = NewBlastRadius().Evaluate(amplified, &Context{})
+	if !ok || ev.Multiplier <= 1.0 {
+		t.Errorf("a Windows-separated payments path must still amplify, got %v ok=%t", ev.Multiplier, ok)
+	}
+}
+
 func TestBlastRadius_MatchesTestSuffixes(t *testing.T) {
 	for _, p := range []string{
 		"internal/auth/login_test.go",
