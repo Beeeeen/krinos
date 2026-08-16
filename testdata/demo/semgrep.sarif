@@ -1,0 +1,121 @@
+{
+  "version": "2.1.0",
+  "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "Semgrep",
+          "semanticVersion": "1.90.0",
+          "rules": [
+            {
+              "id": "go.lang.security.audit.sqli.string-formatted-query",
+              "shortDescription": { "text": "SQL query built by string formatting" },
+              "fullDescription": { "text": "Untrusted input is concatenated into a SQL statement." },
+              "properties": { "security-severity": "8.8", "tags": ["security", "cwe-89", "OWASP-A03"] },
+              "defaultConfiguration": { "level": "error" }
+            },
+            {
+              "id": "go.lang.security.audit.crypto.use-of-weak-rsa-key",
+              "shortDescription": { "text": "RSA key shorter than 2048 bits" },
+              "properties": { "security-severity": "5.9", "tags": ["security", "cwe-326"] },
+              "defaultConfiguration": { "level": "warning" }
+            },
+            {
+              "id": "javascript.browser.security.raw-html-concat",
+              "shortDescription": { "text": "Raw HTML built by concatenation" },
+              "properties": { "security-severity": "7.2", "tags": ["security", "cwe-79"] },
+              "defaultConfiguration": { "level": "error" }
+            },
+            {
+              "id": "generic.secrets.security.detected-generic-api-key",
+              "shortDescription": { "text": "Hardcoded API key" },
+              "properties": { "security-severity": "7.5", "tags": ["security", "secret"] },
+              "defaultConfiguration": { "level": "error" }
+            },
+            {
+              "id": "go.lang.correctness.unchecked-error",
+              "shortDescription": { "text": "Error return value is ignored" },
+              "properties": { "security-severity": "2.0", "tags": ["correctness"] },
+              "defaultConfiguration": { "level": "note" }
+            }
+          ]
+        }
+      },
+      "results": [
+        {
+          "ruleId": "go.lang.security.audit.sqli.string-formatted-query",
+          "level": "error",
+          "message": { "text": "Untrusted request parameter flows into a formatted SQL query" },
+          "locations": [{ "physicalLocation": {
+            "artifactLocation": { "uri": "backend/internal/payments/ledger.go" },
+            "region": { "startLine": 214, "endLine": 218 } } }]
+        },
+        {
+          "ruleId": "go.lang.security.audit.sqli.string-formatted-query",
+          "level": "error",
+          "message": { "text": "Untrusted request parameter flows into a formatted SQL query" },
+          "locations": [{ "physicalLocation": {
+            "artifactLocation": { "uri": "backend/internal/reports/export.go" },
+            "region": { "startLine": 77, "endLine": 79 } } }]
+        },
+        {
+          "ruleId": "go.lang.security.audit.sqli.string-formatted-query",
+          "level": "error",
+          "message": { "text": "Untrusted request parameter flows into a formatted SQL query" },
+          "locations": [{ "physicalLocation": {
+            "artifactLocation": { "uri": "backend/internal/reports/testdata/seed_queries.go" },
+            "region": { "startLine": 12 } } }]
+        },
+        {
+          "ruleId": "go.lang.security.audit.crypto.use-of-weak-rsa-key",
+          "level": "warning",
+          "message": { "text": "1024-bit RSA key generated" },
+          "locations": [{ "physicalLocation": {
+            "artifactLocation": { "uri": "backend/internal/auth/keys.go" },
+            "region": { "startLine": 41 } } }]
+        },
+        {
+          "ruleId": "javascript.browser.security.raw-html-concat",
+          "level": "error",
+          "message": { "text": "User-controlled value inserted into innerHTML" },
+          "locations": [{ "physicalLocation": {
+            "artifactLocation": { "uri": "storefront/src/components/ProductBlurb.tsx" },
+            "region": { "startLine": 58 } } }]
+        },
+        {
+          "ruleId": "javascript.browser.security.raw-html-concat",
+          "level": "error",
+          "message": { "text": "User-controlled value inserted into innerHTML" },
+          "locations": [{ "physicalLocation": {
+            "artifactLocation": { "uri": "storefront/src/components/ProductBlurb.spec.ts" },
+            "region": { "startLine": 22 } } }]
+        },
+        {
+          "ruleId": "generic.secrets.security.detected-generic-api-key",
+          "level": "error",
+          "message": { "text": "Hardcoded API key assigned to a constant" },
+          "locations": [{ "physicalLocation": {
+            "artifactLocation": { "uri": "backend/internal/auth/keys.go" },
+            "region": { "startLine": 12 } } }]
+        },
+        {
+          "ruleId": "go.lang.correctness.unchecked-error",
+          "level": "note",
+          "message": { "text": "Return value of Close is not checked" },
+          "locations": [{ "physicalLocation": {
+            "artifactLocation": { "uri": "backend/internal/storage/blob.go" },
+            "region": { "startLine": 133 } } }]
+        },
+        {
+          "ruleId": "go.lang.correctness.unchecked-error",
+          "level": "note",
+          "message": { "text": "Return value of Close is not checked" },
+          "locations": [{ "physicalLocation": {
+            "artifactLocation": { "uri": "backend/internal/storage/cache.go" },
+            "region": { "startLine": 61 } } }]
+        }
+      ]
+    }
+  ]
+}

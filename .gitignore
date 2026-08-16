@@ -1,0 +1,30 @@
+# Build output
+/bin/
+/dist/
+coverage.out
+coverage.html
+
+# Krinos output — nobody should ever commit a report, they contain findings
+# about a specific state of a specific repository.
+krinos-report.json
+krinos.json
+
+# Scanner reports. If someone drops trivy.json in the repo root while
+# debugging, it must not become a commit.
+/trivy.json
+/grype.json
+/gitleaks.json
+/semgrep.sarif
+/security-reports/
+/reports/
+
+# EPSS datasets are large, dated, and belong to whoever downloaded them.
+epss*.json
+
+# Editors and OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+desktop.ini

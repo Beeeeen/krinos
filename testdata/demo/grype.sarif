@@ -1,0 +1,55 @@
+{
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "Grype",
+          "rules": [
+            {
+              "id": "CVE-2023-44487-golang.org/x/net",
+              "shortDescription": { "text": "HTTP/2 rapid reset" },
+              "properties": { "security-severity": "7.5", "tags": ["security", "dependency", "CVE-2023-44487"] },
+              "defaultConfiguration": { "level": "error" }
+            },
+            {
+              "id": "CVE-2023-4863-libwebp",
+              "shortDescription": { "text": "Heap buffer overflow in WebP decoding" },
+              "properties": { "security-severity": "8.8", "tags": ["security", "dependency", "CVE-2023-4863"] },
+              "defaultConfiguration": { "level": "error" }
+            },
+            {
+              "id": "CVE-2025-90001-github.com/vendor/yamlparse",
+              "shortDescription": { "text": "Deserialization of untrusted data" },
+              "properties": { "security-severity": "9.6", "tags": ["security", "dependency", "CVE-2025-90001"] },
+              "defaultConfiguration": { "level": "error" }
+            }
+          ]
+        }
+      },
+      "results": [
+        {
+          "ruleId": "CVE-2023-44487-golang.org/x/net",
+          "level": "error",
+          "message": { "text": "golang.org/x/net 0.14.0 is affected by CVE-2023-44487" },
+          "locations": [{ "physicalLocation": {
+            "artifactLocation": { "uri": "backend/go.sum" }, "region": { "startLine": 1 } } }]
+        },
+        {
+          "ruleId": "CVE-2023-4863-libwebp",
+          "level": "error",
+          "message": { "text": "libwebp 1.3.1 is affected by CVE-2023-4863" },
+          "locations": [{ "physicalLocation": {
+            "artifactLocation": { "uri": "storefront/package-lock.json" }, "region": { "startLine": 1 } } }]
+        },
+        {
+          "ruleId": "CVE-2025-90001-github.com/vendor/yamlparse",
+          "level": "error",
+          "message": { "text": "github.com/vendor/yamlparse 1.2.0 is affected by CVE-2025-90001" },
+          "locations": [{ "physicalLocation": {
+            "artifactLocation": { "uri": "backend/go.sum" }, "region": { "startLine": 1 } } }]
+        }
+      ]
+    }
+  ]
+}

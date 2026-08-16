@@ -1,0 +1,35 @@
+[
+  {
+    "Description": "AWS Access Key committed to the repository",
+    "StartLine": 14,
+    "EndLine": 14,
+    "File": "infra/deploy/production.env",
+    "RuleID": "aws-access-token",
+    "Entropy": 4.31,
+    "Commit": "9f2c1a4e",
+    "Author": "ci-bot",
+    "Date": "2026-07-02T09:14:00Z"
+  },
+  {
+    "Description": "Stripe live secret key",
+    "StartLine": 7,
+    "EndLine": 7,
+    "File": "backend/internal/payments/config.go",
+    "RuleID": "stripe-access-token",
+    "Entropy": 4.62,
+    "Commit": "3ab88c10",
+    "Author": "someone",
+    "Date": "2026-06-18T15:02:00Z"
+  },
+  {
+    "Description": "Generic API key",
+    "StartLine": 3,
+    "EndLine": 3,
+    "File": "storefront/src/__tests__/fixtures/stub-keys.json",
+    "RuleID": "generic-api-key",
+    "Entropy": 3.98,
+    "Commit": "77de0091",
+    "Author": "someone",
+    "Date": "2026-05-30T11:41:00Z"
+  }
+]

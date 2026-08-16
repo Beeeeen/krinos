@@ -1,0 +1,131 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  # Weekly, so a dependency-free project still finds out when the toolchain
+  # or a vulnerability database moves under it.
+  schedule:
+    - cron: "17 4 * * 1"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # Krinos runs on developer laptops and CI runners alike, and the path
+        # handling in particular has to behave identically on all three.
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.26"
+          check-latest: true
+
+      - name: Verify formatting
+        if: matrix.os == 'ubuntu-latest'
+        shell: bash
+        run: |
+          unformatted="$(gofmt -l .)"
+          if [ -n "$unformatted" ]; then
+            echo "::error::these files are not gofmt-clean:"
+            echo "$unformatted"
+            exit 1
+          fi
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Test with race detector
+        run: go test -race -count=1 ./...
+
+      - name: Test with coverage
+        if: matrix.os == 'ubuntu-latest'
+        run: go test -covermode=atomic -coverprofile=coverage.out ./...
+
+      - name: Report coverage
+        if: matrix.os == 'ubuntu-latest'
+        shell: bash
+        run: go tool cover -func=coverage.out | tail -n 1
+
+  supply-chain:
+    name: supply chain
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.26"
+
+      # The zero-dependency claim in the README is load-bearing marketing and
+      # a real security property. CI enforces it so it cannot rot.
+      - name: Assert zero third-party dependencies
+        shell: bash
+        run: |
+          deps="$(go list -deps -f '{{if not .Standard}}{{.ImportPath}}{{end}}' ./... \
+                  | grep -v '^github.com/krinos-dev/krinos' || true)"
+          if [ -n "$deps" ]; then
+            echo "::error::Krinos must have zero third-party dependencies. Found:"
+            echo "$deps"
+            echo "If this is intentional, justify it in ARCHITECTURE.md first."
+            exit 1
+          fi
+          echo "confirmed: standard library only"
+
+      - name: Check for known vulnerabilities
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@latest
+          govulncheck ./...
+
+  dogfood:
+    name: dogfood
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.26"
+
+      - name: Build
+        run: go build -o bin/krinos ./cmd/krinos
+
+      # If our own demo corpus ever stops producing the verdicts we describe
+      # in the README, the README is wrong and we want to know before a user
+      # does.
+      - name: Triage the demo corpus
+        run: |
+          ./bin/krinos scan --fail-on never --format json testdata/demo/ > krinos-report.json
+          ./bin/krinos scan --fail-on never testdata/demo/
+
+      - name: Assert the demo still gates
+        shell: bash
+        run: |
+          set +e
+          ./bin/krinos scan --fail-on act testdata/demo/ > /dev/null
+          code=$?
+          set -e
+          if [ "$code" -ne 1 ]; then
+            echo "::error::the demo corpus should exit 1 under --fail-on act, got $code"
+            exit 1
+          fi
+          echo "confirmed: gate behaves as documented"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: krinos-report
+          path: krinos-report.json

@@ -1,0 +1,11 @@
+.git
+.github
+bin
+dist
+testdata
+*.md
+Makefile
+Dockerfile
+.dockerignore
+.gitignore
+coverage.out
